@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>종이 미로: 잉크 얼룩의 추격 (Paper Maze)</title>
+  
+  <!-- SEO & Social Meta Tags -->
+  <meta name="description" content="연습장 종이 위에서 벌어지는 미로 탈출 게임! 3개의 도장을 찾고 잉크 얼룩 몬스터의 추격을 피해 출구로 탈출하세요.">
+  <meta name="keywords" content="웹게임, 미로게임, 웹아두이노, JavaScript Game, GitHub Pages, HTML5 Game">
+  <meta property="og:title" content="종이 미로: 잉크 얼룩의 추격">
+  <meta property="og:description" content="웹 브라우저에서 즐기는 흥미진진한 감성 픽셀 종이 미로 웹게임">
+  <meta property="og:type" content="website">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Level 8 Emergency Alert Effect Layer -->
+  <div class="vignette" aria-hidden="true"></div>
+
+  <main class="app-container">
+    <!-- Header Area -->
+    <header class="head">
+      <div>
+        <h1>종이 미로</h1>
+        <svg class="rule-line" viewBox="0 0 104 8" aria-hidden="true">
+          <path d="M1 5.4C14 2.2 27 6.6 40 4.2S66 1.4 79 4.6 97 6.2 103 3"/>
+        </svg>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="btnHome" aria-label="메인 화면으로" title="메인 화면">🏠</button>
+        <button class="icon-btn" id="btnMute" aria-label="소리 켜기/끄기" title="소리 설정">🔊</button>
+      </div>
+    </header>
+
+    <!-- 1. 시작 화면 (Start Screen) -->
+    <section id="start-screen" class="screen active">
+      <div class="start-card">
+        <div class="story-box">
+          <p>📜 <b>스토리</b>: 낡은 연습장 종이 위에 갇힌 작은 탐험가!</p>
+          <p>종이 곳곳에 숨겨진 <b>3개의 골든 스타 도장(★)</b>을 찍어야만 잠겨있던 출구(●)가 열립니다.</p>
+          <p>하지만 종이 위를 배회하는 <b>잉크 얼룩(먹물)</b>을 조심하세요! 얼룩에 부딪히면 지도가 번지고 시간 벌칙이 추가됩니다.</p>
+        </div>
+
+        <div class="guide-box">
+          <h3>🎮 조작법 & 규칙</h3>
+          <ul>
+            <li><b>이동</b>: 키보드 방향키 또는 <code>W</code> <code>A</code> <code>S</code> <code>D</code> / 화면 드래그</li>
+            <li><b>길 엿보기</b>: <code>Spacebar</code> 키 (벌점 +15초, 1.6초간 경로 표시)</li>
+            <li><b>시야 시스템</b>: 탐험을 진행할수록 시야가 조금씩 밝아집니다.</li>
+            <li><b>마지막 8단계</b>: 극악의 난이도! 심장소리와 함께 얼룩이 바싹 추격합니다.</li>
+          </ul>
+        </div>
+
+        <div class="level-select-container">
+          <label>난이도 (단계) 선택</label>
+          <div class="level-buttons">
+            <button class="level-btn selected" data-level="1">1단계</button>
+            <button class="level-btn" data-level="2">2단계</button>
+            <button class="level-btn" data-level="3">3단계</button>
+            <button class="level-btn" data-level="4">4단계</button>
+            <button class="level-btn" data-level="5">5단계</button>
+            <button class="level-btn" data-level="6">6단계</button>
+            <button class="level-btn" data-level="7">7단계</button>
+            <button class="level-btn final-btn" data-level="8">8단계 (Final)</button>
+          </div>
+        </div>
+
+        <button class="btn strong lg" id="btnStart">🚀 모험 시작하기</button>
+      </div>
+    </section>
+
+    <!-- 2. 게임 플레이 화면 (Game Screen) -->
+    <section id="game-screen" class="screen">
+      <!-- 게임 상태 및 스탯 -->
+      <div class="stats" aria-live="polite">
+        <span class="level-pick">
+          <select id="levelSelect" aria-label="단계 선택"></select> / <span id="maxLevel">8</span>단계
+        </span>
+        <span id="stamps">☆☆☆</span>
+        <span>이동 <b id="moves">0</b></span>
+        <span>시간 <b id="time">0:00</b></span>
+        <span id="bestWrap" hidden>최고 <b id="best">–</b></span>
+      </div>
+
+      <!-- 상황 메시지 -->
+      <p class="note" id="note">도장 3개를 모아야 출구가 열립니다.</p>
+
+      <!-- 캔버스 미로 및 결과 오버레이 -->
+      <div class="board">
+        <canvas id="c" width="480" height="480" tabindex="0" aria-label="미로 게임판. 방향키로 움직이세요."></canvas>
+        
+        <!-- 3. 결과/승리 모달 오버레이 (Win Modal Overlay) -->
+        <div class="win-overlay" id="win-overlay" hidden>
+          <p id="winText">탈출 성공!</p>
+          <div class="modal-actions">
+            <button class="btn strong" id="btnNext">다음 단계로</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 컨트롤 버튼 (하단) -->
+      <div class="controls">
+        <button class="btn" id="btnAgain">🔄 새 미로</button>
+        <button class="btn" id="btnHint">👁️ 길 엿보기 (+15초)</button>
+        <span class="hint-text">방향키 이동 · Space 엿보기</span>
+      </div>
+
+      <!-- 터치/모바일 및 온스크린 방향 패드 -->
+      <div class="pad" aria-label="방향 조작 패드">
+        <button class="btn up" data-dir="N" aria-label="위로">↑</button>
+        <button class="btn" data-dir="W" aria-label="왼쪽으로">←</button>
+        <button class="btn" data-dir="S" aria-label="아래로">↓</button>
+        <button class="btn" data-dir="E" aria-label="오른쪽으로">→</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- JavaScript Scripts -->
+  <script src="js/audio.js"></script>
+  <script src="js/maze.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
